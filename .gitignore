@@ -1,0 +1,10 @@
+.venv/
+
+datasets/
+labs/*/runs/
+labs/*/artifacts/
+
+__pycache__/
+*.egg-info/
+.mypy_cache/
+.ipynb_checkpoints/

@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlkit"
+version = "0.1.0"
+description = ""
+requires-python = ">=3.12"
+dependencies = [
+    "torch",
+    "torchvision",
+    "torchmetrics",
+    "tensorboard",
+    "numpy",
+    "pillow",
+    "matplotlib"
+]
+
+[project.optional-dependencies]
+notebook = ["jupyter"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+labkit = ["py.typed"]
