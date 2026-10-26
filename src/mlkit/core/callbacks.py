@@ -6,6 +6,8 @@ import time
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
+import mlflow
+
 from .history import Mode
 
 if TYPE_CHECKING:
@@ -100,3 +102,11 @@ class EarlyStopping(Callback):
             )
             trainer.should_stop = True
 
+
+class MLflowLogger(Callback):
+    def on_fit_start(self, trainer: Trainer) -> None:
+        if mlflow.active_run() is None:
+            raise RuntimeError("MLflowLogger needs an active run: wrap training in `with mlflow.start_run():`")
+
+    def on_epoch_end(self, trainer: Trainer, epoch: int, logs: Mapping[str, float]) -> None:
+        mlflow.log_metrics(dict(logs), step=epoch)

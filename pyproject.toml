@@ -11,7 +11,7 @@ dependencies = [
     "torch",
     "torchvision",
     "torchmetrics",
-    "tensorboard",
+    "mlflow",
     "numpy",
     "pillow",
     "matplotlib",
@@ -31,3 +31,6 @@ strict = true
 
 [tool.pyright]
 typeCheckingMode = "strict"
+reportUnknownMemberType = "warning"
+reportUnknownArgumentType = "warning"
+reportUnknownVariableType = "warning"

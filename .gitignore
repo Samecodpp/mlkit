@@ -3,6 +3,8 @@
 datasets/
 labs/*/runs/
 labs/*/artifacts/
+mlflow.db
+mlartifacts/
 
 __pycache__/
 *.egg-info/
