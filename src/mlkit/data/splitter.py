@@ -1,7 +1,8 @@
-from dataclasses import dataclass
-from collections import defaultdict
-from typing import Protocol, Sequence
 import math
+from collections import defaultdict
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Protocol
 
 import torch
 
@@ -55,7 +56,7 @@ class StratifiedSplitter(_FractionSplitter, Splitter):
             group = groups[target]
             positions: list[int] = torch.randperm(len(group), generator=generator).tolist()
             shuffled = [group[position] for position in positions]
-            
+
             for part, chunk in zip(parts, self._cut(shuffled), strict=True):
                 part.extend(chunk)
 

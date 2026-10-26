@@ -4,6 +4,7 @@ from typing import Literal
 import torch
 from torch import nn
 
+
 @dataclass(frozen=True)
 class ConvBlockConfig:
     out_channels: int
@@ -15,7 +16,8 @@ class ConvBlockConfig:
 
     def __post_init__(self) -> None:
         if self.padding == "same" and self.stride != 1:
-            raise ValueError("padding='same' do not combine with stride > 1")
+            raise ValueError("padding='same' cannot be combined with stride > 1")
+
 
 @dataclass(frozen=True)
 class CNNConfig:
@@ -25,6 +27,7 @@ class CNNConfig:
     conv_blocks: tuple[ConvBlockConfig, ...]
     hidden_sizes: tuple[int, ...] = ()
     dropout: float = 0.0
+
 
 class CNNClassifier(nn.Module):
     def __init__(self, config: CNNConfig) -> None:
@@ -78,7 +81,7 @@ class CNNClassifier(nn.Module):
                 kernel_size=config.kernel_size,
                 stride=config.stride,
                 padding=config.padding,
-                bias=not config.batch_norm
+                bias=not config.batch_norm,
             )
         ]
 
@@ -93,4 +96,5 @@ class CNNClassifier(nn.Module):
         return nn.Sequential(*block)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.classifier(self.conv_layers(x))
+        logits: torch.Tensor = self.classifier(self.conv_layers(x))
+        return logits

@@ -14,7 +14,7 @@ dependencies = [
     "tensorboard",
     "numpy",
     "pillow",
-    "matplotlib"
+    "matplotlib",
 ]
 
 [project.optional-dependencies]
@@ -24,4 +24,10 @@ notebook = ["jupyter"]
 where = ["src"]
 
 [tool.setuptools.package-data]
-labkit = ["py.typed"]
+mlkit = ["py.typed"]
+
+[tool.mypy]
+strict = true
+
+[tool.pyright]
+typeCheckingMode = "strict"

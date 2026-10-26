@@ -17,7 +17,7 @@ class Trainer:
     def __init__(
         self,
         device: torch.device | None = None,
-        callbacks: Sequence[Callback] = ()
+        callbacks: Sequence[Callback] = (),
     ) -> None:
         self.device = device or get_device()
         self.callbacks = list(callbacks)
@@ -29,7 +29,7 @@ class Trainer:
         self,
         task: Task[BatchT],
         data: Iterable[BatchT],
-        split: Split
+        split: Split,
     ) -> dict[str, float]:
         is_train = split == "train"
 
@@ -71,15 +71,15 @@ class Trainer:
         return results | metrics
 
     def fit[BatchT: Batch](
-            self,
-            task: Task[BatchT],
-            train_data: Iterable[BatchT],
-            val_data: Iterable[BatchT] | None = None,
-            *,
-            epochs: int
-        ) -> History:
+        self,
+        task: Task[BatchT],
+        train_data: Iterable[BatchT],
+        val_data: Iterable[BatchT] | None = None,
+        *,
+        epochs: int,
+    ) -> History:
         if epochs <= 0:
-            raise ValueError("Epochs should be more than 0")
+            raise ValueError(f"epochs must be at least 1, got {epochs}")
 
         task.to(self.device)
         self.should_stop = False
@@ -119,5 +119,3 @@ class Trainer:
 
         task.to(self.device)
         return self._run_epoch(task=task, data=data, split=split)
-
-
