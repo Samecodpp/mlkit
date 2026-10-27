@@ -29,6 +29,9 @@ class History:
     def keys(self) -> list[str]:
         return list(self.records.keys())
 
+    def to_dict(self) -> dict[str, dict[int, float]]:
+        return {key: dict(record) for key, record in self.records.items()}
+
     def _record(self, key: str) -> list[tuple[int, float]]:
         if key not in self.records:
             raise KeyError(f"'{key}' not found. Available: {sorted(self.records)}")
