@@ -5,6 +5,8 @@ import torch
 
 
 type Batch = torch.Tensor | Sequence[Batch] | Mapping[str, Batch]
+type Labeled = tuple[torch.Tensor, torch.Tensor]
+type Unlabeled = torch.Tensor
 
 
 def move_to[B: Batch](batch: B, device: torch.device) -> B:

@@ -4,10 +4,8 @@ import torch
 from torch import nn
 from torchmetrics import MetricCollection
 
-from ..core.batch import move_to
+from ..core.batch import Labeled, move_to
 from ..core.task import OptimizerFactory, Split, StepOutput, Task
-
-type Labeled = tuple[torch.Tensor, torch.Tensor]
 
 
 class ClassificationTask(Task[Labeled]):
@@ -80,6 +78,7 @@ class ClassificationTask(Task[Labeled]):
 
     @torch.no_grad()
     def predict(self, data: Iterable[Labeled]) -> tuple[torch.Tensor, torch.Tensor]:
+        was_training = self.training
         self.eval()
         device = next(self.parameters()).device
         all_probs: list[torch.Tensor] = []
@@ -90,6 +89,8 @@ class ClassificationTask(Task[Labeled]):
             logits: torch.Tensor = self.model(x)
             all_probs.append(self._probs(logits).cpu())
             all_targets.append(y.cpu())
+
+        self.train(was_training)
 
         if not all_probs:
             raise ValueError("predict data yielded no batches")

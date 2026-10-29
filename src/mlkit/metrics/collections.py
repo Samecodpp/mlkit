@@ -11,6 +11,7 @@ from torchmetrics.classification import (
     MulticlassPrecision,
     MulticlassRecall,
 )
+from torchmetrics.image import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchmetrics.regression import MeanAbsoluteError, MeanSquaredError, R2Score
 
 
@@ -39,4 +40,12 @@ def regression_metrics() -> MetricCollection:
         "mae": MeanAbsoluteError(),
         "rmse": MeanSquaredError(squared=False),
         "r2": R2Score(),
+    })
+
+
+def image_metrics(data_range: float = 1.0) -> MetricCollection:
+    return MetricCollection({
+        "mse": MeanSquaredError(),
+        "psnr": PeakSignalNoiseRatio(data_range=data_range, dim=(1, 2, 3)),
+        "ssim": StructuralSimilarityIndexMeasure(data_range=data_range),
     })

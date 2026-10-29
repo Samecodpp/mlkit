@@ -28,7 +28,7 @@ def plot_image_grid(
 
         image = images[index].detach().cpu()
         if image.size(0) == 1:
-            ax.imshow(image[0].numpy(), cmap="gray")
+            ax.imshow(image[0].numpy(), cmap="gray", vmin=0, vmax=1)
         else:
             ax.imshow(image.permute(1, 2, 0).clamp(0, 1).numpy())
         if titles is not None:

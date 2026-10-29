@@ -21,8 +21,7 @@ class Task[BatchT: Batch](nn.Module, ABC):
     def validation_step(self, batch: BatchT) -> StepOutput:
         raise NotImplementedError(f"{type(self).__name__} does not implement validation_step")
 
-    def reset_metrics(self, split: Split) -> None:
-        pass
+    def reset_metrics(self, split: Split) -> None: ...
 
     def compute_metrics(self, split: Split) -> dict[str, float]:
         return {}

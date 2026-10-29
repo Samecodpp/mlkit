@@ -21,12 +21,17 @@ def flatten_params(config: object) -> dict[str, str]:
         raise TypeError(f"flatten_params expects a dataclass instance, got {type(config).__name__}")
 
     params: dict[str, str] = {}
-    _flatten(dataclasses.asdict(config), "", params)
+    _flatten(config, "", params)
     return params
 
 
 def _flatten(value: object, prefix: str, params: dict[str, str]) -> None:
-    if isinstance(value, dict):
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        if prefix:
+            params[prefix.removesuffix(".")] = type(value).__name__
+        for field in dataclasses.fields(value):
+            _flatten(getattr(value, field.name), f"{prefix}{field.name}.", params)
+    elif isinstance(value, dict):
         for key, item in cast(dict[str, object], value).items():
             _flatten(item, f"{prefix}{key}.", params)
     elif isinstance(value, (list, tuple)):
