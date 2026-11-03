@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Literal
 
@@ -7,13 +8,19 @@ type NormDim = Literal[1, 2]
 
 
 @dataclass(frozen=True)
-class BatchNorm:
+class Norm(ABC):
+    @abstractmethod
+    def create(self, num_features: int, dim: NormDim = 2) -> nn.Module: ...
+
+
+@dataclass(frozen=True)
+class BatchNorm(Norm):
     def create(self, num_features: int, dim: NormDim = 2) -> nn.Module:
         return nn.BatchNorm1d(num_features) if dim == 1 else nn.BatchNorm2d(num_features)
 
 
 @dataclass(frozen=True)
-class GroupNorm:
+class GroupNorm(Norm):
     num_groups: int = 8
 
     def __post_init__(self) -> None:
@@ -29,9 +36,6 @@ class GroupNorm:
 
 
 @dataclass(frozen=True)
-class LayerNorm:
+class LayerNorm(Norm):
     def create(self, num_features: int, dim: NormDim = 2) -> nn.Module:
         return nn.LayerNorm(num_features) if dim == 1 else nn.GroupNorm(1, num_features)
-
-
-type Norm = BatchNorm | GroupNorm | LayerNorm

@@ -8,6 +8,7 @@ from torch import nn
 from .batch import Batch, first_tensor
 
 type OptimizerFactory = Callable[[Iterator[nn.Parameter]], torch.optim.Optimizer]
+type SchedulerFactory = Callable[[torch.optim.Optimizer], torch.optim.lr_scheduler.LRScheduler]
 type Split = Literal["train", "val", "test"]
 type StepOutput = dict[str, torch.Tensor | float]
 
@@ -36,7 +37,20 @@ class Task[BatchT: Batch](nn.Module, ABC):
         return tensor.size(0)
 
     @staticmethod
-    def step(optimizer: torch.optim.Optimizer, loss: torch.Tensor) -> None:
+    def step(
+        optimizer: torch.optim.Optimizer,
+        loss: torch.Tensor,
+        max_grad_norm: float | None = None,
+        scheduler: torch.optim.lr_scheduler.LRScheduler | None = None,
+    ) -> None:
         optimizer.zero_grad()
         torch.autograd.backward(loss)
+
+        if max_grad_norm is not None:
+            params = [param for group in optimizer.param_groups for param in group["params"]]
+            nn.utils.clip_grad_norm_(params, max_grad_norm)
+
         optimizer.step()
+
+        if scheduler is not None:
+            scheduler.step()

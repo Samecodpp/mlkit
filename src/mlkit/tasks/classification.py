@@ -5,7 +5,7 @@ from torch import nn
 from torchmetrics import MetricCollection
 
 from ..core.batch import Labeled, move_to
-from ..core.task import OptimizerFactory, Split, StepOutput, Task
+from ..core.task import OptimizerFactory, SchedulerFactory, Split, StepOutput, Task
 
 
 class ClassificationTask(Task[Labeled]):
@@ -16,11 +16,18 @@ class ClassificationTask(Task[Labeled]):
         metrics: MetricCollection,
         binary: bool = False,
         loss_fn: nn.Module | None = None,
+        scheduler: SchedulerFactory | None = None,
+        max_grad_norm: float | None = None,
     ) -> None:
+        if max_grad_norm is not None and max_grad_norm <= 0:
+            raise ValueError(f"max_grad_norm must be positive, got {max_grad_norm}")
+
         super().__init__()
 
         self.model = model
         self.opt = optimizer(model.parameters())
+        self.scheduler = None if scheduler is None else scheduler(self.opt)
+        self.max_grad_norm = max_grad_norm
         self.binary = binary
         self.loss_fn = (
             loss_fn if loss_fn is not None
@@ -65,7 +72,7 @@ class ClassificationTask(Task[Labeled]):
         x, y = batch
         logits: torch.Tensor = self.model(x)
         loss = self._loss(logits, y)
-        self.step(self.opt, loss)
+        self.step(self.opt, loss, self.max_grad_norm, self.scheduler)
         self.train_metrics.update(self._probs(logits.detach()), y)
         return {"loss": loss}
 
