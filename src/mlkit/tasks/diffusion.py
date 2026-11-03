@@ -9,6 +9,8 @@ from torchmetrics import MetricCollection
 from ..core.batch import Unlabeled
 from ..core.task import OptimizerFactory, Split, StepOutput, Task
 
+type Variance = Literal["beta", "posterior"]
+
 
 class Schedule(ABC):
     @abstractmethod
@@ -99,6 +101,31 @@ class NoiseSchedule(nn.Module):
         a_bars = self.alpha_bars[t, None, None, None]
         return (x_t - torch.sqrt(1 - a_bars) * noise) / torch.sqrt(a_bars)
 
+    def step(
+        self,
+        x_t: torch.Tensor,
+        t: int,
+        eps: torch.Tensor,
+        noise: torch.Tensor | None = None,
+        variance: Variance = "posterior",
+    ) -> torch.Tensor:
+        if not 0 <= t < self.steps:
+            raise ValueError(f"t must be in [0, {self.steps}), got {t}")
+
+        alpha_bar_t = self.alpha_bars[t]
+        alpha_bar_prev = self.alpha_bars_prev[t]
+
+        x0 = ((x_t - torch.sqrt(1 - alpha_bar_t) * eps) / torch.sqrt(alpha_bar_t)).clamp(-1, 1)
+        mean = (
+            torch.sqrt(alpha_bar_prev) * self.betas[t] / (1 - alpha_bar_t) * x0
+            + torch.sqrt(self.alphas[t]) * (1 - alpha_bar_prev) / (1 - alpha_bar_t) * x_t
+        )
+
+        if t == 0 or noise is None:
+            return mean
+        sigma_squared = self.betas[t] if variance == "beta" else self.posterior_variance[t]
+        return mean + torch.sqrt(sigma_squared) * noise
+
 
 class DiffusionTask(Task[Unlabeled]):
     def __init__(
@@ -107,14 +134,12 @@ class DiffusionTask(Task[Unlabeled]):
         optimizer: OptimizerFactory,
         schedule: NoiseSchedule,
         image_shape: tuple[int, int, int],
-        variance: Literal["beta", "posterior"] = "posterior",
+        variance: Variance = "posterior",
         metrics: MetricCollection | None = None,
         loss_fn: nn.Module | None = None
     ) -> None:
         super().__init__()
-        if variance not in ("beta", "posterior"):
-            raise ValueError(f"variance must be 'beta' or 'posterior', got {variance!r}")
-
+        
         self.model = model
         self.opt = optimizer(model.parameters())
         self.loss_fn = loss_fn if loss_fn is not None else nn.MSELoss()
@@ -173,27 +198,11 @@ class DiffusionTask(Task[Unlabeled]):
     def _to_image(cls, x: torch.Tensor) -> torch.Tensor:
         return cls._to_unit(x).cpu()
 
-    def _sigma(self, t: int) -> torch.Tensor:
-        variance = self.schedule.betas[t] if self.variance == "beta" else self.schedule.posterior_variance[t]
-        return torch.sqrt(variance)
-
     def _denoise_step(self, x_t: torch.Tensor, t: int, generator: torch.Generator | None) -> torch.Tensor:
-        beta_t = self.schedule.betas[t]
-        alpha_t = self.schedule.alphas[t]
-        alpha_bar_t = self.schedule.alpha_bars[t]
-        alpha_bar_prev = self.schedule.alpha_bars_prev[t]
-
         t_batch = torch.full((x_t.size(0),), t, dtype=torch.long, device=x_t.device)
         eps: torch.Tensor = self.model(x_t, t_batch)
-        x0 = ((x_t - torch.sqrt(1 - alpha_bar_t) * eps) / torch.sqrt(alpha_bar_t)).clamp(-1, 1)
-        mean = (
-            torch.sqrt(alpha_bar_prev) * beta_t / (1 - alpha_bar_t) * x0
-            + torch.sqrt(alpha_t) * (1 - alpha_bar_prev) / (1 - alpha_bar_t) * x_t
-        )
-
-        if t == 0:
-            return mean
-        return mean + self._sigma(t) * self._randn(tuple(x_t.shape), generator, x_t.device)
+        noise = None if t == 0 else self._randn(tuple(x_t.shape), generator, x_t.device)
+        return self.schedule.step(x_t, t, eps, noise, self.variance)
 
     def _denoise(
         self,

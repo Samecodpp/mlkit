@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-notebook = ["jupyter"]
+notebook = ["jupyter", "torchinfo"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
